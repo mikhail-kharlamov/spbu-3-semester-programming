@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push
+
+jobs:
+  lint:
+    name: StyleCop Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build with StyleCop
+        run: dotnet build --no-restore --configuration Release -warnaserror
+
+      - name: Upload lint log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylecop-log
+          path: '**/*.binlog'
+          
+  build:
+    name: build-and-test-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build-script: ./build-and-test.sh
+          - os: macos-latest
+            build-script: ./build-and-test.sh
+          - os: windows-latest
+            build-script: ./build-and-test.ps1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Make script executable
+        run: chmod +x build-and-test.sh
+
+      - name: Build
+        run: ${{ matrix.build-script }} build
+
+      - name: Test
+        run: ${{ matrix.build-script }} test
