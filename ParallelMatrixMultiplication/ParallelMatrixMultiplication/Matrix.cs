@@ -32,7 +32,7 @@ public class Matrix
         var nonConsistent = data.Where(i => i.Length != data[0].Length).ToArray();
         if (nonConsistent.Any())
         {
-            throw new ArgumentException("Строки матрицы из массива не соотносятся по разамерам.");
+            throw new ArgumentException("Строки матрицы из массива не соотносятся по размерам.");
         }
 
         var matrix = new Matrix();
@@ -46,7 +46,7 @@ public class Matrix
     /// Fabric method for uploading matrix from the text file.
     /// </summary>
     /// <param name="filePath">path to text file for upload.</param>
-    /// <returns>Matrix object with data from file.</returns>>
+    /// <returns>Matrix object with data from file.</returns>
     public static Matrix FromFile(string filePath)
     {
         try
@@ -65,8 +65,8 @@ public class Matrix
         catch (Exception e)
         {
             Console.Error.WriteLine(
-                $"Не удалось проинициализировать матрицу из файла {filePath}. Возвращается пустой объект. Ошибка: {e.Message}");
-            return new Matrix();
+                $"Не удалось проинициализировать матрицу из файла {filePath}. Ошибка: {e.Message}");
+            throw;
         }
     }
 

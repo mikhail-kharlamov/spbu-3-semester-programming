@@ -65,4 +65,48 @@ public class MatrixTests
         Assert.That(matrix.Columns, Is.EqualTo(loaded.Columns));
         Assert.That(matrix.GetCell(1, 1), Is.EqualTo(loaded.GetCell(1, 1)));
     }
+
+    /// <summary>
+    /// Test for inconsistent rows lengths in file.
+    /// </summary>
+    [Test]
+    public void FromFile_InconsistentRows_Throws()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".txt");
+        File.WriteAllLines(
+            tempFile,
+            ["1 2 3", "4 5"]);
+        Assert.Throws<ArgumentException>(() => Matrix.FromFile(tempFile));
+    }
+
+    /// <summary>
+    /// Test for throwing exception if data is not integer number.
+    /// </summary>
+
+    [Test]
+    public void FromFile_InvalidNumbers_Throws()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".txt");
+        File.WriteAllText(tempFile, "1 2 a");
+
+        Assert.Throws<FormatException>(() => Matrix.FromFile(tempFile));
+    }
+
+    /// <summary>
+    /// Test for GetRow and GetColumn methods.
+    /// </summary>
+    [Test]
+    public void GetRow_And_GetColumn_ReturnsExpected()
+    {
+        var data = new[]
+        {
+            new[] { 1, 2, 3 },
+            new[] { 4, 5, 6 },
+        };
+
+        var matrix = Matrix.FromArrays(data);
+
+        Assert.That(matrix.GetRow(0), Is.EquivalentTo(new[] { 1, 2, 3 }));
+        Assert.That(matrix.GetColumn(2), Is.EquivalentTo(new[] { 3, 6 }));
+    }
 }
