@@ -8,6 +8,11 @@
         <RootNamespace>BenchmarkRunner</RootNamespace>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>1591</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\ParallelMatrixMultiplication\ParallelMatrixMultiplication.csproj" />
     </ItemGroup>
