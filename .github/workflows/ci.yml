@@ -17,7 +17,14 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: |
+          solution=$(find . -name "*.sln" | head -n 1)
+          if [ -z "$solution" ]; then
+            project=$(find . -name "*.csproj" | head -n 1)
+            dotnet restore "$project"
+          else
+            dotnet restore "$solution"
+          fi
 
       - name: Build with StyleCop
         run: dotnet build --no-restore --configuration Release -warnaserror
