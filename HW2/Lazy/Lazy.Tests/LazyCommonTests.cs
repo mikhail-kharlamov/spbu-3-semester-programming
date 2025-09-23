@@ -1,16 +1,16 @@
 ﻿namespace Lazy;
 
 /// <summary>
-/// ...
+/// Class with tests for two ILazy implements: single- and multi-thread.
 /// </summary>
-/// <typeparam name="T">..</typeparam>
+/// <typeparam name="T">Type of ILazy implement.</typeparam>
 [TestFixture(typeof(SingleThreadLazy<int>))]
 [TestFixture(typeof(MultiThreadLazy<int>))]
 public class LazyCommonTests<T>
     where T : ILazy<int>
 {
     /// <summary>
-    /// ..
+    /// Checks that function called once with many calls of Get method.
     /// </summary>
     [Test]
     public void SupplierCalledOnce()
@@ -34,7 +34,7 @@ public class LazyCommonTests<T>
     }
 
     /// <summary>
-    /// ..
+    /// Checks that function called only with Get method and not in initialization.
     /// </summary>
     [Test]
     public void SupplierNotCalledBeforeGet()

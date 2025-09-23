@@ -14,7 +14,7 @@ public class SingleThreadLazy<T>(Func<T> supplier) : ILazy<T>
     private bool isValueCreated = false;
 
     /// <summary>
-    /// Method for get the function resuilt value.
+    /// Method for get the function result value.
     /// </summary>
     /// <returns>Result of function computation.</returns>
     public T Get()
