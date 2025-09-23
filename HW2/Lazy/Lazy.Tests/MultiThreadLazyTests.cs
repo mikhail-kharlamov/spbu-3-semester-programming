@@ -11,8 +11,8 @@ public class MultiThreadLazyTests
     [Test]
     public void SupplierCalledOnlyOnceInMultithreadedEnvironment()
     {
-        int counter = 0;
-        Func<int> supplier = () =>
+        var counter = 0;
+        var supplier = () =>
         {
             Interlocked.Increment(ref counter);
             Thread.Sleep(50);
