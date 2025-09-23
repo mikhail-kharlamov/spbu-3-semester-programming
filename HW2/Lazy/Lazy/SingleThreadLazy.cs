@@ -1,22 +1,22 @@
 namespace Lazy;
 
 /// <summary>
-/// ...
+/// Class for lazy computation in single-thread mode.
 /// </summary>
-/// <param name="supplier"></param>
-/// <typeparam name="T"></typeparam>
+/// <param name="supplier">Function object for computation.</param>
+/// <typeparam name="T">Type that function returns.</typeparam>
 public class SingleThreadLazy<T>(Func<T> supplier) : ILazy<T>
 {
     private Func<T>? supplier = supplier;
-    
+
     private T? value;
-    
+
     private bool isValueCreated = false;
-    
+
     /// <summary>
-    /// ...
+    /// Method for get the function resuilt value.
     /// </summary>
-    /// <returns>...</returns>
+    /// <returns>Result of function computation.</returns>
     public T Get()
     {
         if (!this.isValueCreated)
@@ -25,7 +25,7 @@ public class SingleThreadLazy<T>(Func<T> supplier) : ILazy<T>
             this.supplier = null;
             this.isValueCreated = true;
         }
-        
+
         return this.value;
     }
 }
