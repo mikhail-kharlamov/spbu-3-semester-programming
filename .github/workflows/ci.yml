@@ -17,10 +17,20 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
+        id: restore
+        run: |
+          solution=$(find . -name "*.sln" | head -n 1)
+          if [ -z "$solution" ]; then
+            project=$(find . -name "*.csproj" | head -n 1)
+            echo "path=$project" >> $GITHUB_OUTPUT
+            dotnet restore "$project"
+          else
+            echo "path=$solution" >> $GITHUB_OUTPUT
+            dotnet restore "$solution"
+          fi
 
       - name: Build with StyleCop
-        run: dotnet build --no-restore --configuration Release -warnaserror
+        run: dotnet build ${{ steps.restore.outputs.path }} --no-restore --configuration Release -warnaserror
 
       - name: Upload lint log
         if: failure()
@@ -28,7 +38,7 @@ jobs:
         with:
           name: stylecop-log
           path: '**/*.binlog'
-          
+
   build:
     name: build-and-test-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -52,6 +62,7 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Make script executable
+        if: runner.os != 'Windows'
         run: chmod +x build-and-test.sh
 
       - name: Build
