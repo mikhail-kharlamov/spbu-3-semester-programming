@@ -16,12 +16,12 @@ public class MultiThreadLazy<T> : ILazy<T>
 
     private T? value;
 
-    private bool isValueCreated = false;
+    private bool isValueCreated;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultiThreadLazy{T}"/> class.
     /// </summary>
-    /// <param name="supplier">..</param>
+    /// <param name="supplier">Function for lazy computation.</param>
     /// <exception cref="ArgumentNullException">Throws if function is null.</exception>
     public MultiThreadLazy(Func<T> supplier)
     {
