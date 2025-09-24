@@ -1,3 +1,7 @@
+// <copyright file="MultiThreadLazy.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
+// </copyright>
+
 namespace Lazy;
 
 /// <summary>

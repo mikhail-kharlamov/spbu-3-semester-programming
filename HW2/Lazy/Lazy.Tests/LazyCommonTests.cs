@@ -1,4 +1,8 @@
-﻿namespace Lazy;
+﻿// <copyright file="LazyCommonTests.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
+// </copyright>
+
+namespace Lazy;
 
 /// <summary>
 /// Class with tests for two ILazy implements: single- and multi-thread.
