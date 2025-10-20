@@ -45,7 +45,6 @@ public class Tests
             trueResults.Add(localI + localI);
         }
 
-
         for (var i = 0; i < tasks.Count; i++)
         {
             Assert.That(tasks[i].Result, Is.EqualTo(trueResults[i]));
@@ -83,7 +82,7 @@ public class Tests
 
         for (var i = 0; i < totalTasks; i++)
         {
-            var task = this.threadPool.Submit(
+            this.threadPool.Submit(
                 () =>
                 {
                     Thread.Sleep(100);
