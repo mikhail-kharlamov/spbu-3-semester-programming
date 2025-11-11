@@ -1,3 +1,3 @@
-namespace FTPServer;
+namespace FTPServer.ServerObjects;
 
 public record ServerFileInfo();

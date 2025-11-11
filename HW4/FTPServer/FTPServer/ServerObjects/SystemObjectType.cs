@@ -1,4 +1,4 @@
-namespace FTPServer;
+namespace FTPServer.ServerObjects;
 
 public enum SystemObjectType
 {

@@ -1,13 +1,32 @@
-﻿using System.Net.Sockets;
+﻿// <copyright file="Server.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
+// </copyright>
+
 using System.Net;
+using System.Net.Sockets;
+using FTPServer.ServerObjects;
 
 namespace FTPServer;
 
-public class Server
+/// <summary>
+/// Represents a simple TCP server that listens for client connections on a specified port,
+/// accepts multiple client connections concurrently, and processes client requests asynchronously.
+/// </summary>
+public class Server : IDisposable
 {
-    private TcpListener server;
+    private TcpListener? server = null;
 
-    public async Task Start(Int32 port)
+    private bool shutDown = false;
+
+    /// <summary>
+    /// Starts the TCP server on the specified port.
+    /// The server listens on localhost (127.0.0.1) and accepts incoming client connections asynchronously.
+    /// Each connected client is handled concurrently in a separate asynchronous task.
+    /// The method runs indefinitely until the server is stopped or an exception occurs.
+    /// </summary>
+    /// <param name="port">The port number on which the server listens for incoming connections.</param>
+    /// <returns>A task that represents the asynchronous server operation.</returns>
+    public async Task Start(int port)
     {
         try
         {
@@ -15,44 +34,60 @@ public class Server
 
             this.server = new TcpListener(localAddr, port);
 
-            server.Start();
+            this.server.Start();
 
-            var bytes = new byte[256];
-            var data = string.Empty;
-
-            while(true)
+            while (!this.shutDown)
             {
                 Console.Write("Waiting for a connection... ");
-                
-                using var client = await server.AcceptTcpClientAsync();
+
+                var client = await this.server.AcceptTcpClientAsync();
+
                 Console.WriteLine("Connected!");
-                
-                var stream = client.GetStream();
 
-                var i = 0;
-
-                while((i = await stream.ReadAsync(bytes, 0, bytes.Length)) != 0)
-                {
-                    data = System.Text.Encoding.UTF8.GetString(bytes, 0, i);
-                    Console.WriteLine("Received: {0}", data);
-                    
-                    var message = await this.Handler(data);
-                    
-                    await stream.WriteAsync(message, 0, message.Length);
-                    Console.WriteLine("Sent: {0}", message);
-                }
+                _ = Task.Run(() => this.HandleClientAsync(client));
             }
         }
-        catch(SocketException e)
+        catch (SocketException e)
         {
             Console.WriteLine("SocketException: {0}", e);
         }
         finally
         {
-            server.Stop();
+            if (this.server is not null)
+            {
+                this.server.Stop();
+            }
         }
+    }
 
-        Console.WriteLine("\nHit enter to continue...");
+    /// <summary>
+    /// Object dispose.
+    /// </summary>
+    public void Dispose()
+    {
+        this.shutDown = true;
+    }
+
+    private async Task HandleClientAsync(TcpClient client)
+    {
+        using (client)
+        {
+            var stream = client.GetStream();
+            var bytes = new byte[256];
+            var data = string.Empty;
+
+            var i = 0;
+            while ((i = await stream.ReadAsync(bytes, 0, bytes.Length)) != 0)
+            {
+                data = System.Text.Encoding.UTF8.GetString(bytes, 0, i);
+                Console.WriteLine("Received: {0}", data);
+
+                var message = await this.Handler(data);
+
+                await stream.WriteAsync(message, 0, message.Length);
+                Console.WriteLine("Sent: {0}", message);
+            }
+        }
     }
 
     private async Task<byte[]> Handler(string data)
@@ -61,7 +96,7 @@ public class Server
         {
             throw new Exception($"Invalid data: {data}");
         }
-        
+
         switch (data[0])
         {
             case '1':
@@ -80,7 +115,7 @@ public class Server
         {
             return false;
         }
-        
+
         if (words[0] != "1" && words[0] != "2")
         {
             return false;
@@ -93,35 +128,35 @@ public class Server
     {
         if (this.GetSystemObjectInfo(path) != SystemObjectType.Directory)
         {
-            return  "-1"u8.ToArray();
+            return "-1"u8.ToArray();
         }
-        
+
         var directories = Directory.GetDirectories(path);
         var files = Directory.GetFiles(path);
-        
+
         var result = (directories.Length + files.Length).ToString();
         foreach (var file in files)
         {
             result += $" {file} false";
         }
-        
+
         foreach (var directory in directories)
         {
             result += $" {directory} true";
         }
-        
+
         result += "\n";
         var message = System.Text.Encoding.UTF8.GetBytes(result);
         return message;
     }
-    
+
     private async Task<byte[]> Get(string path)
     {
         if (this.GetSystemObjectInfo(path) != SystemObjectType.File)
         {
             return "-1"u8.ToArray();
         }
-        
+
         var bytes = await File.ReadAllBytesAsync(path);
         var size = bytes.LongLength;
         var sizeBytes = BitConverter.GetBytes(size);
@@ -134,13 +169,13 @@ public class Server
         {
             return sizeBytes;
         }
-        
+
         var result = new byte[sizeBytes.Length + bytes.Length];
         Array.Copy(sizeBytes, 0, result, 0, sizeBytes.Length);
         Array.Copy(bytes, 0, result, sizeBytes.Length, bytes.Length);
         return result;
     }
-    
+
     private SystemObjectType GetSystemObjectInfo(string path)
     {
         if (Directory.Exists(path))
@@ -152,7 +187,7 @@ public class Server
         {
             return SystemObjectType.File;
         }
-        
+
         return SystemObjectType.NotExists;
     }
 }
