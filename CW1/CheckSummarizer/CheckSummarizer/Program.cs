@@ -2,8 +2,6 @@
 // Copyright (c) Mikhail Kharlamov. All rights reserved.
 // </copyright>
 
-using System.Runtime.CompilerServices;
-
 namespace CheckSummarizer;
 
 internal class Program
