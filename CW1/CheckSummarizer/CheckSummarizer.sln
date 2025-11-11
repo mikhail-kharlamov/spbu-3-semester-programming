@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckSummarizer.Tests", "CheckSummarizer.Tests\CheckSummarizer.Tests.csproj", "{8734421A-0642-430D-8F0C-5AAB72A0BF0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckSummarizer", "CheckSummarizer\CheckSummarizer.csproj", "{0D639027-A3B9-48E2-995F-1C2788A8F5DD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8734421A-0642-430D-8F0C-5AAB72A0BF0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8734421A-0642-430D-8F0C-5AAB72A0BF0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8734421A-0642-430D-8F0C-5AAB72A0BF0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8734421A-0642-430D-8F0C-5AAB72A0BF0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D639027-A3B9-48E2-995F-1C2788A8F5DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D639027-A3B9-48E2-995F-1C2788A8F5DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D639027-A3B9-48E2-995F-1C2788A8F5DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D639027-A3B9-48E2-995F-1C2788A8F5DD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
