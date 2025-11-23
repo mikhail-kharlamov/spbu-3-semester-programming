@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyNUnit", "MyNUnit\MyNUnit.csproj", "{EBC108D3-4CA2-43A1-9FA7-520691DE0E62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyNUnit.Tests", "MyNUnit.Tests\MyNUnit.Tests.csproj", "{629D149F-5058-464E-BC33-569AAD82F67B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBC108D3-4CA2-43A1-9FA7-520691DE0E62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBC108D3-4CA2-43A1-9FA7-520691DE0E62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBC108D3-4CA2-43A1-9FA7-520691DE0E62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBC108D3-4CA2-43A1-9FA7-520691DE0E62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{629D149F-5058-464E-BC33-569AAD82F67B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{629D149F-5058-464E-BC33-569AAD82F67B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{629D149F-5058-464E-BC33-569AAD82F67B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{629D149F-5058-464E-BC33-569AAD82F67B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
