@@ -1,5 +1,5 @@
-// <copyright file="Test.cs" company="MyCompany">
-// Copyright (c) MyCompany. All rights reserved.
+// <copyright file="Test.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
 // </copyright>
 
 namespace MyNUnit.Attributes;

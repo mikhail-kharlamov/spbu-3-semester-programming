@@ -1,11 +1,11 @@
 // <copyright file="TestResult.cs" company="Mikhail Kharlamov">
-// Copyright (c) MyCompany. All rights reserved.
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
 // </copyright>
 
 namespace MyNUnit.Models;
 
 /// <summary>
-/// DTO для одного теста, удобная для логирования и отрисовки.
+/// DTO that represents a single test result and is convenient for logging and rendering in reports.
 /// </summary>
 public record TestResult(
     string AssemblyName,
@@ -18,17 +18,17 @@ public record TestResult(
     Exception? Exception = null)
 {
     /// <summary>
-    /// Полное имя теста для логов и вывода.
+    /// Fully qualified name of the test including assembly, class and method.
     /// </summary>
-    public string FullName => $"{AssemblyName}:{ClassName}.{MethodName}";
+    public string FullName => $"{this.AssemblyName}:{this.ClassName}.{this.MethodName}";
 
     /// <summary>
-    /// Короткое имя без сборки.
+    /// Short name of the test that includes only class and method.
     /// </summary>
-    public string ShortName => $"{ClassName}.{MethodName}";
+    public string ShortName => $"{this.ClassName}.{this.MethodName}";
 
     /// <summary>
-    /// Удобный флаг успеха.
+    /// Indicates whether the test finished successfully.
     /// </summary>
-    public bool IsSuccess => Status == TestStatus.Passed;
+    public bool IsSuccess => this.Status == TestStatus.Passed;
 }
