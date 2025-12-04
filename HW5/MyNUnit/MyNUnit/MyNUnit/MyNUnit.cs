@@ -215,7 +215,8 @@ public class MyNUnit
                 {
                     sw.Stop();
 
-                    results.Add(new TestResult(
+                    results.Add(
+                        new TestResult(
                         AssemblyName: assemblyName,
                         ClassName: className,
                         MethodName: method.Name,
@@ -306,7 +307,7 @@ public class MyNUnit
                         after.Add(method);
                         break;
 
-                    case Test:
+                    case MyTest:
                         tests.Add(method);
                         break;
                 }

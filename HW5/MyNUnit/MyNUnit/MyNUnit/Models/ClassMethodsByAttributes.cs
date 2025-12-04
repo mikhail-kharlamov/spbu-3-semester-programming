@@ -1,5 +1,5 @@
-// <copyright file="MethodsWithAttributes.cs" company="Mikhail Kharlamov">
-// Copyright (c) MyCompany. All rights reserved.
+// <copyright file="ClassMethodsByAttributes.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
 // </copyright>
 
 using System.Reflection;
