@@ -5,7 +5,7 @@ using MyNUnit.Models;
 
 if (args.Length != 1)
 {
-    Console.WriteLine("Usage: MiniTestRunner <path-to-tests-root>");
+    Console.WriteLine("Usage: MyNUnit <path-to-tests-root>");
     return 1;
 }
 
