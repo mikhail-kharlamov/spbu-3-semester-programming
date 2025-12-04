@@ -1,4 +1,7 @@
-﻿using MyNUnit.Models;
+﻿// <copyright file="Program.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
+// </copyright>
+using MyNUnit.Models;
 
 if (args.Length != 1)
 {
@@ -24,38 +27,38 @@ return failed ? 1 : 0;
 
 static void PrintResults(TestResult[] results)
 {
-    foreach (var r in results.OrderBy(r => r.AssemblyName)
+    foreach (var result in results.OrderBy(r => r.AssemblyName)
                              .ThenBy(r => r.ClassName)
                              .ThenBy(r => r.MethodName))
     {
-        var fullName = $"{r.AssemblyName}.{r.ClassName}.{r.MethodName}";
-        var ms = (int)r.Duration.TotalMilliseconds;
+        var fullName = $"{result.AssemblyName}.{result.ClassName}.{result.MethodName}";
+        var milliseconds = (int)result.Duration.TotalMilliseconds;
 
-        switch (r.Status)
+        switch (result.Status)
         {
             case TestStatus.Passed:
-                Console.WriteLine($"[PASS]    {fullName} ({ms} ms)");
+                Console.WriteLine($"[PASS]    {fullName} ({milliseconds} ms)");
                 break;
             case TestStatus.Failed:
-                Console.WriteLine($"[FAIL]    {fullName} ({ms} ms)");
-                Console.WriteLine($"         Phase: {r.Phase}");
-                if (!string.IsNullOrEmpty(r.Message))
+                Console.WriteLine($"[FAIL]    {fullName} ({milliseconds} ms)");
+                Console.WriteLine($"         Phase: {result.Phase}");
+                if (!string.IsNullOrEmpty(result.Message))
                 {
-                    Console.WriteLine($"         Message: {r.Message}");
+                    Console.WriteLine($"         Message: {result.Message}");
                 }
 
-                if (r.Exception != null)
+                if (result.Exception != null)
                 {
-                    Console.WriteLine($"         Exception: {r.Exception.GetType().FullName}: {r.Exception.Message}");
+                    Console.WriteLine($"         Exception: {result.Exception.GetType().FullName}: {result.Exception.Message}");
                 }
 
                 Console.WriteLine();
                 break;
             case TestStatus.Ignored:
-                Console.WriteLine($"[IGNORED] {fullName} ({ms} ms)");
-                if (!string.IsNullOrEmpty(r.Message))
+                Console.WriteLine($"[IGNORED] {fullName} ({milliseconds} ms)");
+                if (!string.IsNullOrEmpty(result.Message))
                 {
-                    Console.WriteLine($"          Reason: {r.Message}");
+                    Console.WriteLine($"          Reason: {result.Message}");
                 }
 
                 Console.WriteLine();
