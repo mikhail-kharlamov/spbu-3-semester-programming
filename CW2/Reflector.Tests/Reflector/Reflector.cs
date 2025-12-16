@@ -104,6 +104,27 @@ public class Reflector
 
         var firstProperties = a.GetProperties(this.all);
         var secondFieldsProperties = b.GetProperties(this.all);
+
+        var firstPropertiesNames = firstProperties.Select(x => x.Name).ToArray();
+        var secondPropertiesNames = secondFieldsProperties.Select(x => x.Name).ToArray();
+
+        Console.WriteLine($"{a.Name} fields that not in {b.Name} fields:");
+        foreach (var fieldName in firstPropertiesNames)
+        {
+            if (!secondPropertiesNames.Contains(fieldName))
+            {
+                Console.WriteLine($"    {fieldName};");
+            }
+        }
+
+        Console.WriteLine($"{b.Name} fields that not in {a.Name} fields:");
+        foreach (var fieldName in secondPropertiesNames)
+        {
+            if (!firstPropertiesNames.Contains(fieldName))
+            {
+                Console.WriteLine($"    {fieldName};");
+            }
+        }
     }
 
     private string GetKeyWords(FieldInfo field)
