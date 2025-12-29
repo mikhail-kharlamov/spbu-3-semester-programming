@@ -27,12 +27,17 @@ public class MultiThreadLazyTests
 
         var results = new int[20];
         List<Thread> threads = new();
+
+        using var startEvent = new ManualResetEvent(false);
+
         for (var i = 0; i < 20; i++)
         {
             var index = i;
             var thread = new Thread(
-                () =>
-                {
+                obj =>
+            {
+                var waiter = (ManualResetEvent)obj!;
+                waiter.WaitOne();
                 results[index] = lazy.Get();
             });
             threads.Add(thread);
@@ -40,8 +45,10 @@ public class MultiThreadLazyTests
 
         foreach (var thread in threads)
         {
-            thread.Start();
+            thread.Start(startEvent);
         }
+
+        startEvent.Set();
 
         foreach (var thread in threads)
         {

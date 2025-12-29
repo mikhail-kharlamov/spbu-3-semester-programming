@@ -16,7 +16,7 @@ public class MultiThreadLazy<T> : ILazy<T>
 
     private T? value;
 
-    private bool isValueCreated;
+    private volatile bool isValueCreated;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultiThreadLazy{T}"/> class.
@@ -34,26 +34,16 @@ public class MultiThreadLazy<T> : ILazy<T>
     /// <returns>Result of function computation.</returns>
     public T Get()
     {
-        if (this.isValueCreated && this.value is not null)
-        {
-            return this.value;
-        }
-
         lock (this.locker)
         {
-            if (!this.isValueCreated && this.supplier is not null)
+            if (!this.isValueCreated)
             {
-                this.value = this.supplier();
+                this.value = this.supplier!();
                 this.supplier = null;
                 this.isValueCreated = true;
             }
         }
 
-        if (this.value is null)
-        {
-            throw new InvalidOperationException("The Lazy has not been initialized.");
-        }
-
-        return this.value;
+        return this.value!;
     }
 }

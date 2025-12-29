@@ -32,18 +32,13 @@ public class SingleThreadLazy<T> : ILazy<T>
     /// <returns>Result of function computation.</returns>
     public T Get()
     {
-        if (!this.isValueCreated && this.supplier is not null)
+        if (!this.isValueCreated)
         {
-            this.value = this.supplier();
+            this.value = this.supplier!();
             this.supplier = null;
             this.isValueCreated = true;
         }
 
-        if (this.value is null)
-        {
-            throw new InvalidOperationException("The Lazy has not been initialized.");
-        }
-
-        return this.value;
+        return this.value!;
     }
 }
