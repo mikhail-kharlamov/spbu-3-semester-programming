@@ -15,12 +15,12 @@ public class MatrixMultiplicationTests
     [Test]
     public void Multiply_Simple2x2_Works()
     {
-        var left = Matrix.FromArrays(
+        var left = new Matrix(
         [
            [1, 2],
            [3, 4],
         ]);
-        var right = Matrix.FromArrays(
+        var right = new Matrix(
         [
             [2, 0],
             [1, 2]
@@ -37,12 +37,12 @@ public class MatrixMultiplicationTests
     [Test]
     public void MultiplyParallel_Simple2x2_Works()
     {
-        var left = Matrix.FromArrays(
+        var left = new Matrix(
             [
                 [1, 2],
                 [3, 4],
             ]);
-        var right = Matrix.FromArrays(
+        var right = new Matrix(
             [
                 [2, 0],
                 [1, 2]
@@ -59,12 +59,12 @@ public class MatrixMultiplicationTests
     [Test]
     public void MultiplyParallel_GivesSameResultAsSequential()
     {
-        var left = Matrix.FromArrays(
+        var left = new Matrix(
         [
             [1, 2, 3],
             [4, 5, 6]
         ]);
-        var right = Matrix.FromArrays(
+        var right = new Matrix(
             [
                 [7, 8],
                 [9, 10],
@@ -78,7 +78,7 @@ public class MatrixMultiplicationTests
         {
             for (var j = 0; j < sequential.Columns; j++)
             {
-                Assert.That(parallel.GetCell(i, j), Is.EqualTo(sequential.GetCell(i, j)));
+                Assert.That(parallel[i, j], Is.EqualTo(sequential[i, j]));
             }
         }
     }

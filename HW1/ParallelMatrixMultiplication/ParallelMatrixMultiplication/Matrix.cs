@@ -9,125 +9,195 @@ namespace ParallelMatrixMultiplication;
 /// </summary>
 public class Matrix
 {
-    private int[][] data = Array.Empty<int[]>();
+    private readonly int[,] data;
 
     /// <summary>
-    /// Gets count of rows in matrix.
+    /// Initializes a new instance of the <see cref="Matrix"/> class from 2D array.
     /// </summary>
-    public int Rows { get; private set; }
-
-    /// <summary>
-    /// Gets count of columns in matrix.
-    /// </summary>
-    public int Columns { get; private set; }
-
-    /// <summary>
-    /// Fabric method for uploading matrix from the array with integer arrays.
-    /// </summary>
-    /// <param name="data">Array with integer arrays.</param>
-    /// <returns>Matrix object with data from arrays.</returns>
-    /// <exception cref="Exception">Throw exception if arrays don't correspond in size.</exception>
-    public static Matrix FromArrays(int[][] data)
+    /// <param name="data">2D array with matrix values.</param>
+    public Matrix(int[,] data)
     {
-        var nonConsistent = data.Where(i => i.Length != data[0].Length).ToArray();
-        if (nonConsistent.Any())
-        {
-            throw new ArgumentException("Строки матрицы из массива не соотносятся по размерам.");
-        }
-
-        var matrix = new Matrix();
-        matrix.Columns = data[0].Length;
-        matrix.Rows = data.Length;
-        matrix.data = data;
-        return matrix;
+        ArgumentNullException.ThrowIfNull(data);
+        this.data = (int[,])data.Clone();
     }
 
     /// <summary>
-    /// Fabric method for uploading matrix from the text file.
+    /// Initializes a new instance of the <see cref="Matrix"/> class from jagged array.
     /// </summary>
-    /// <param name="filePath">path to text file for upload.</param>
-    /// <returns>Matrix object with data from file.</returns>
-    public static Matrix FromFile(string filePath)
+    /// <param name="data">Array with integer arrays.</param>
+    /// <exception cref="ArgumentException">Throw exception if arrays don't correspond in size.</exception>
+    public Matrix(int[][] data)
     {
+        ArgumentNullException.ThrowIfNull(data);
+
+        if (data.Length == 0)
+        {
+            this.data = new int[0, 0];
+            return;
+        }
+
+        if (data[0] is null)
+        {
+            throw new ArgumentException("The row of the matrix cannot be null.");
+        }
+
+        var columns = data[0].Length;
+        if (data.Any(row => row.Length != columns))
+        {
+            throw new ArgumentException("The rows of the matrix from the array are not related in size.");
+        }
+
+        var tmp = new int[data.Length, columns];
+        for (var i = 0; i < data.Length; i++)
+        {
+            for (var j = 0; j < columns; j++)
+            {
+                tmp[i, j] = data[i][j];
+            }
+        }
+
+        this.data = tmp;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Matrix"/> class from the text file.
+    /// </summary>
+    /// <param name="filePath">Path to text file for upload.</param>
+    public Matrix(string filePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
         try
         {
             var lines = File.ReadAllLines(filePath);
-            List<int[]> matrix = new();
+
+            List<int[]> rows = new();
             foreach (var line in lines)
             {
-                var vector = Matrix.ParseLine(line);
-                matrix.Add(vector);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                rows.Add(ParseLine(line));
             }
 
-            var resultMatrix = Matrix.FromArrays(matrix.ToArray());
-            return resultMatrix;
+            if (rows.Count == 0)
+            {
+                this.data = new int[0, 0];
+                return;
+            }
+
+            var columns = rows[0].Length;
+            var nonConsistent = rows.Where(r => r.Length != columns).ToArray();
+            if (nonConsistent.Any())
+            {
+                throw new ArgumentException("The rows of the matrix from the file are not related in size.");
+            }
+
+            var tmp = new int[rows.Count, columns];
+            for (var i = 0; i < rows.Count; i++)
+            {
+                for (var j = 0; j < columns; j++)
+                {
+                    tmp[i, j] = rows[i][j];
+                }
+            }
+
+            this.data = tmp;
         }
         catch (Exception e)
         {
             Console.Error.WriteLine(
-                $"Не удалось проинициализировать матрицу из файла {filePath}. Ошибка: {e.Message}");
+                $"Failed to initialize the matrix from the {filePath} file. Error: {e.Message}");
             throw;
         }
     }
+
+    /// <summary>
+    /// Gets count of rows in matrix.
+    /// </summary>
+    public int Rows => this.data.GetLength(0);
+
+    /// <summary>
+    /// Gets count of columns in matrix.
+    /// </summary>
+    public int Columns => this.data.GetLength(1);
+
+    /// <summary>
+    /// Gets matrix element by indices (read-only indexer).
+    /// </summary>
+    /// <param name="row">Row index.</param>
+    /// <param name="column">Column index.</param>
+    /// <returns>Element at [row, column].</returns>
+    public int this[int row, int column] => this.data[row, column];
 
     /// <summary>
     /// Method for loading matrix to text file.
     /// </summary>
-    /// <param name="filePath">path to text file for load.</param>
+    /// <param name="filePath">Path to text file for load.</param>
     public void ToFile(string filePath)
     {
         try
         {
-            var lines =
-                from row in this.data
-                select string.Join(" ", row);
+            var lines = new string[this.Rows];
+            for (var i = 0; i < this.Rows; i++)
+            {
+                var row = new string[this.Columns];
+                for (var j = 0; j < this.Columns; j++)
+                {
+                    row[j] = this.data[i, j].ToString();
+                }
+
+                lines[i] = string.Join(" ", row);
+            }
+
             File.WriteAllLines(filePath, lines);
         }
         catch (Exception e)
         {
-            Console.Error.WriteLine($"Матрица не сохранена в {filePath}. Ошибка при сохранении матрицы: {e.Message}");
+            Console.Error.WriteLine($"The matrix is not saved in {filePath}. Error saving the matrix: {e.Message}");
             throw;
         }
     }
 
     /// <summary>
-    /// Method for getting matrix cell.
+    /// Method for getting matrix row (copy).
     /// </summary>
-    /// <param name="row">row index of element.</param>
-    /// <param name="column">column index of element.</param>
-    /// <returns>integer element from matrix cell.</returns>
-    public int GetCell(int row, int column)
-    {
-        return this.data[row][column];
-    }
-
-    /// <summary>
-    /// Method for getting matrix row.
-    /// </summary>
-    /// <param name="row">row index.</param>
-    /// <returns>integer array with elements from matrix row.</returns>
+    /// <param name="row">Row index.</param>
+    /// <returns>Integer array with elements from matrix row.</returns>
     public int[] GetRow(int row)
     {
-        return this.data[row];
+        var result = new int[this.Columns];
+        for (var j = 0; j < this.Columns; j++)
+        {
+            result[j] = this.data[row, j];
+        }
+
+        return result;
     }
 
     /// <summary>
-    /// Method for getting matrix column.
+    /// Method for getting matrix column (copy).
     /// </summary>
-    /// <param name="column">column index.</param>
-    /// <returns>integer array with element from from matrix column.</returns>
+    /// <param name="column">Column index.</param>
+    /// <returns>Integer array with elements from matrix column.</returns>
     public int[] GetColumn(int column)
     {
-        var vector =
-            from row in this.data
-            select row[column];
-        return vector.ToArray();
+        var result = new int[this.Rows];
+        for (var i = 0; i < this.Rows; i++)
+        {
+            result[i] = this.data[i, column];
+        }
+
+        return result;
     }
 
     private static int[] ParseLine(string line)
     {
-        var splitLine = line.Split(" ");
+        var splitLine = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var result = new int[splitLine.Length];
+
         for (var i = 0; i < splitLine.Length; i++)
         {
             try
@@ -136,7 +206,7 @@ public class Matrix
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Неконсистентые данные в ячейках матрицы. Ошибка: {e.Message}");
+                Console.Error.WriteLine($"Inconsistent data in the matrix cells. Error: {e.Message}");
                 throw;
             }
         }

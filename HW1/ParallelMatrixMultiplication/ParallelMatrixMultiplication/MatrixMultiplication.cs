@@ -20,24 +20,21 @@ public static class MatrixMultiplication
     {
         if (left.Columns != right.Rows)
         {
-            throw new ArgumentException("Количество столбцов левой матрицы не соотносится с количеством строк правой");
+            throw new ArgumentException(
+                "The number of columns of the left matrix does not correspond to the number of rows of the right one.");
         }
 
-        var matrix = new int[left.Rows][];
-        for (var i = 0; i < left.Rows; i++)
-        {
-            matrix[i] = new int[right.Columns];
-        }
+        var result = new int[left.Rows, right.Columns];
 
         for (var i = 0; i < left.Rows; i++)
         {
             for (var j = 0; j < right.Columns; j++)
             {
-                matrix[i][j] = MatrixMultiplication.DotProduct(left.GetRow(i), right.GetColumn(j));
+                result[i, j] = DotProduct(left, i, right, j);
             }
         }
 
-        return Matrix.FromArrays(matrix);
+        return new Matrix(result);
     }
 
     /// <summary>
@@ -51,15 +48,12 @@ public static class MatrixMultiplication
     {
         if (left.Columns != right.Rows)
         {
-            throw new ArgumentException("Количество столбцов левой матрицы не соотносится с количеством строк правой");
+            throw new ArgumentException(
+                "The number of columns of the left matrix does not correspond to the number of rows of the right one");
         }
 
         var threads = new List<Thread>();
-        var matrix = new int[left.Rows][];
-        for (var i = 0; i < left.Rows; i++)
-        {
-            matrix[i] = new int[right.Columns];
-        }
+        var result = new int[left.Rows, right.Columns];
 
         var processorCount = Environment.ProcessorCount;
         var blockSize = Math.Max(1, left.Rows / processorCount);
@@ -68,17 +62,19 @@ public static class MatrixMultiplication
         {
             var blockStart = startRow;
             var blockEnd = Math.Min(startRow + blockSize, left.Rows);
+
             var thread = new Thread(
-                    () =>
+                () =>
+                {
+                    for (var i = blockStart; i < blockEnd; i++)
                     {
-                        for (var i = blockStart; i < blockEnd; i++)
+                        for (var j = 0; j < right.Columns; j++)
                         {
-                            for (var j = 0; j < right.Columns; j++)
-                            {
-                                matrix[i][j] = MatrixMultiplication.DotProduct(left.GetRow(i), right.GetColumn(j));
-                            }
+                            result[i, j] = DotProduct(left, i, right, j);
                         }
-                    });
+                    }
+                });
+
             threads.Add(thread);
         }
 
@@ -92,11 +88,17 @@ public static class MatrixMultiplication
             thread.Join();
         }
 
-        return Matrix.FromArrays(matrix);
+        return new Matrix(result);
     }
 
-    private static int DotProduct(int[] vector1, int[] vector2)
+    private static int DotProduct(Matrix left, int leftRow, Matrix right, int rightColumn)
     {
-        return vector1.Zip(vector2, (x, y) => x * y).Sum();
+        var sum = 0;
+        for (var k = 0; k < left.Columns; k++)
+        {
+            sum += left[leftRow, k] * right[k, rightColumn];
+        }
+
+        return sum;
     }
 }

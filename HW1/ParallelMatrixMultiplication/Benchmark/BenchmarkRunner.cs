@@ -29,6 +29,7 @@ public static class BenchmarkRunner
 
         foreach (var (leftSize, rightSize) in sizes)
         {
+            // Note: Keeping existing logic check, assuming Width=Rows and Height=Cols based on usage below
             if (leftSize.Width != rightSize.Height)
             {
                 Console.Error.WriteLine("Left size is not correlated with right size.");
@@ -81,16 +82,16 @@ public static class BenchmarkRunner
     private static Matrix GenerateMatrix(Size size)
     {
         var random = new Random();
-        var matrix = new int[size.Width][];
+        var matrix = new int[size.Width, size.Height];
+
         for (var i = 0; i < size.Width; i++)
         {
-            matrix[i] = new int[size.Height];
             for (var j = 0; j < size.Height; j++)
             {
-                matrix[i][j] = random.Next(-100, 100);
+                matrix[i, j] = random.Next(-100, 100);
             }
         }
 
-        return Matrix.FromArrays(matrix);
+        return new Matrix(matrix);
     }
 }
