@@ -1,4 +1,4 @@
-// <copyright file="Controller.cs" company="MyCompany">
+// <copyright file="Controller.cs" company="Mikhail Kharlamov">
 // Copyright (c) MyCompany. All rights reserved.
 // </copyright>
 using Homeworks.Database.Models;

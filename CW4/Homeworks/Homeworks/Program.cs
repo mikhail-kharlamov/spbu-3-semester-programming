@@ -1,4 +1,8 @@
-﻿using DotNetEnv;
+﻿// <copyright file="Program.cs" company="Mikhail Kharlamov">
+// Copyright (c) MyCompany. All rights reserved.
+// </copyright>
+
+using DotNetEnv;
 using Homeworks.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure; // Для GetService

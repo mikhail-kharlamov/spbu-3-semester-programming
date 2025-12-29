@@ -1,4 +1,4 @@
-// <copyright file="CourseTask.cs" company="MyCompany">
+// <copyright file="CourseTask.cs" company="Mikhail Kharlamov">
 // Copyright (c) MyCompany. All rights reserved.
 // </copyright>
 

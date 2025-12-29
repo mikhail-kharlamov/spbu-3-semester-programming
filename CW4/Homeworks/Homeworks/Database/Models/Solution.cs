@@ -1,4 +1,4 @@
-// <copyright file="Solution.cs" company="MyCompany">
+// <copyright file="Solution.cs" company="Mikhail Kharlamov">
 // Copyright (c) MyCompany. All rights reserved.
 // </copyright>
 

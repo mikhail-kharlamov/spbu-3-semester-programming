@@ -1,4 +1,4 @@
-// <copyright file="AppDbContext.cs" company="MyCompany">
+// <copyright file="AppDbContext.cs" company="Mikhail Kharlamov">
 // Copyright (c) MyCompany. All rights reserved.
 // </copyright>
 using Homeworks.Database.Models;

@@ -1,4 +1,4 @@
-// <copyright file="ControllerTests.cs" company="MyCompany">
+// <copyright file="ControllerTests.cs" company="Mikhail Kharlamov">
 // Copyright (c) MyCompany. All rights reserved.
 // </copyright>
 
