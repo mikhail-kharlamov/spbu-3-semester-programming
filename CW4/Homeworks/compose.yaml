@@ -1,11 +1,13 @@
 ﻿version: "3.8"
 services:
-  bot:
-    build:
-      context: .
+  db:
+    image: postgres:18.0
     environment:
       DB_HOST: localhost
       DB_PORT: 5432
       DB_NAME: postgres
       DB_USER: postgres
       DB_PASSWORD: pswd
+    ports:
+      - "5432:5432"
+
