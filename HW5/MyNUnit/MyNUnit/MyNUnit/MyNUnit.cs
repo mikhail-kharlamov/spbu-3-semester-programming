@@ -13,7 +13,7 @@ namespace MyNUnit;
 /// This class discovers all test assemblies under the specified path and executes
 /// all tests found in them in parallel, returning a flat list of test results.
 /// </remarks>
-public class MyNUnit
+public static class MyNUnit
 {
     /// <summary>
     /// Discovers and runs all tests found in assemblies under the specified path.
@@ -28,16 +28,16 @@ public class MyNUnit
     /// Assemblies are processed in parallel, while tests inside a single assembly or test class
     /// may be executed according to the test engine's internal scheduling strategy.
     /// </remarks>
-    public TestResult[] RunAllTests(string path)
+    public static TestResult[] RunAllTests(string path)
     {
-        var assemblies = this.GetAssemblies(path);
+        var assemblies = MyNUnit.GetAssemblies(path);
         var results = new ConcurrentBag<TestResult>();
         Parallel.ForEach(
             assemblies,
             new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
             assembly =>
             {
-                var fileResults = this.HandleClass(assembly);
+                var fileResults = MyNUnit.HandleClass(assembly);
                 foreach (var result in fileResults)
                 {
                     results.Add(result);
@@ -46,24 +46,23 @@ public class MyNUnit
         return results.ToArray();
     }
 
-    private ConcurrentBag<TestResult> HandleClass(Type type)
+    private static ConcurrentBag<TestResult> HandleClass(Type type)
     {
-        var methods = this.GetAttributeMarkedMethods(type);
+        var methods = MyNUnit.GetAttributeMarkedMethods(type);
         var results = new ConcurrentBag<TestResult>();
 
         var assemblyName = type.Assembly.GetName().Name ?? type.Assembly.FullName ?? string.Empty;
         var className = type.FullName ?? type.Name;
 
-        this.RunBeforeClass(methods, type, assemblyName, className, results);
-        this.RunTests(methods, type, assemblyName, className, results);
-        this.RunAfterClass(methods, type, assemblyName, className, results);
+        MyNUnit.RunBeforeClass(methods, assemblyName, className, results);
+        MyNUnit.RunTests(methods, type, assemblyName, className, results);
+        MyNUnit.RunAfterClass(methods, assemblyName, className, results);
 
         return results;
     }
 
-    private void RunBeforeClass(
+    private static void RunBeforeClass(
         ClassMethodsByAttributes methods,
-        Type type,
         string assemblyName,
         string className,
         ConcurrentBag<TestResult> results)
@@ -109,7 +108,7 @@ public class MyNUnit
             });
     }
 
-    private void RunTests(
+    private static void RunTests(
         ClassMethodsByAttributes methods,
         Type type,
         string assemblyName,
@@ -229,9 +228,8 @@ public class MyNUnit
             });
     }
 
-    private void RunAfterClass(
+    private static void RunAfterClass(
         ClassMethodsByAttributes methods,
-        Type type,
         string assemblyName,
         string className,
         ConcurrentBag<TestResult> results)
@@ -265,7 +263,8 @@ public class MyNUnit
                     sw.Stop();
                 }
 
-                results.Add(new TestResult(
+                results.Add(
+                    new TestResult(
                     AssemblyName: assemblyName,
                     ClassName: className,
                     MethodName: method.Name,
@@ -278,7 +277,7 @@ public class MyNUnit
     }
 
 
-    private ClassMethodsByAttributes GetAttributeMarkedMethods(Type type)
+    private static ClassMethodsByAttributes GetAttributeMarkedMethods(Type type)
     {
         List<MethodInfo> beforeClass = new();
         List<MethodInfo> afterClass = new();
@@ -322,7 +321,7 @@ public class MyNUnit
             after.ToArray());
     }
 
-    private Type[] GetAssemblies(string mainPath)
+    private static Type[] GetAssemblies(string mainPath)
     {
         var assemblies = new List<Type>();
         if (Directory.Exists(mainPath))
@@ -331,7 +330,7 @@ public class MyNUnit
             paths.AddRange(Directory.GetDirectories(mainPath));
             foreach (var path in paths)
             {
-                assemblies.AddRange(this.GetAssemblies(path));
+                assemblies.AddRange(MyNUnit.GetAssemblies(path));
             }
         }
 
