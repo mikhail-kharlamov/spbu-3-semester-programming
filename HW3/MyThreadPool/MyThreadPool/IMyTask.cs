@@ -7,21 +7,21 @@ namespace MyThreadPool;
 /// <summary>
 /// Interface for realization of tasks.
 /// </summary>
-/// <typeparam name="TResult">..</typeparam>
+/// <typeparam name="TResult">Type of the task result.</typeparam>
 public interface IMyTask<TResult>
 {
     /// <summary>
-    /// Gets a value indicating whether true if task is completed else false.
+    /// Gets a value indicating whether task is completed.
     /// </summary>
     public bool IsCompleted { get; }
 
     /// <summary>
-    /// Gets a value indicating whether result of task computation.
+    /// Gets the result of task computation.
     /// </summary>
     public TResult Result { get; }
 
     /// <summary>
-    /// Adds next functions for task.
+    /// Adds continuation task.
     /// </summary>
     /// <param name="continuationFunction">New function.</param>
     /// <typeparam name="TNewResult">Type that new function returns.</typeparam>

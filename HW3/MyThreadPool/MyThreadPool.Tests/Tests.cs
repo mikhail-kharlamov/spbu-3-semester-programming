@@ -1,6 +1,7 @@
 ﻿// <copyright file="Tests.cs" company="Mikhail Kharlamov">
 // Copyright (c) Mikhail Kharlamov. All rights reserved.
 // </copyright>
+using System.Collections.Concurrent;
 
 namespace MyThreadPool.Tests;
 
@@ -15,19 +16,13 @@ public class Tests
     /// Setting up the MyThreadPool object.
     /// </summary>
     [SetUp]
-    public void Setup()
-    {
-        this.threadPool = new MyThreadPool(Environment.ProcessorCount);
-    }
+    public void Setup() => this.threadPool = new MyThreadPool(Environment.ProcessorCount);
 
     /// <summary>
     /// Dispose thread pool.
     /// </summary>
     [TearDown]
-    public void TearDown()
-    {
-        this.threadPool.Dispose();
-    }
+    public void TearDown() => this.threadPool.Dispose();
 
     /// <summary>
     /// Simple test checks that thread pool really works.
@@ -72,7 +67,7 @@ public class Tests
     }
 
     /// <summary>
-    /// Checks that shutting down thread pool works.
+    /// Checks that shutting down thread pool works and drains the queue.
     /// </summary>
     [Test]
     public void ShutdownTest()
@@ -85,14 +80,103 @@ public class Tests
             this.threadPool.Submit(
                 () =>
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(50);
                     Interlocked.Increment(ref executedTasks);
                     return 1;
                 });
         }
 
-        Thread.Sleep(100);
         this.threadPool.Shutdown();
-        Assert.That(executedTasks, Is.LessThan(totalTasks));
+
+        Assert.That(executedTasks, Is.EqualTo(totalTasks));
+    }
+
+    /// <summary>
+    /// Verifies that submitting new tasks after shutdown throws exception.
+    /// </summary>
+    [Test]
+    public void SubmitAfterShutdownTest()
+    {
+        this.threadPool.Shutdown();
+        Assert.Throws<InvalidOperationException>(() => this.threadPool.Submit(() => 1));
+    }
+
+    /// <summary>
+    /// Tests race condition between Shutdown and Submit.
+    /// </summary>
+    [Test]
+    public void ConcurrentShutdownAndSubmitTest()
+    {
+        var threadCount = 4;
+        using var pool = new MyThreadPool(threadCount);
+        var iterations = 100;
+        var executed = 0;
+
+        var submitter = new Thread(
+            () =>
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                try
+                {
+                    pool.Submit(
+                        () =>
+                        {
+                            Interlocked.Increment(ref executed);
+                            return 0;
+                        });
+                }
+                catch (InvalidOperationException)
+                {
+                    break;
+                }
+            }
+        });
+
+        var shutter = new Thread(
+            () =>
+        {
+            Thread.Sleep(10);
+            pool.Shutdown();
+        });
+
+        submitter.Start();
+        shutter.Start();
+
+        submitter.Join();
+        shutter.Join();
+
+        Assert.Pass();
+    }
+
+    /// <summary>
+    /// Checks that the pool actually creates the specified number of threads.
+    /// </summary>
+    [Test]
+    public void ThreadCountTest()
+    {
+        var count = 4;
+        using var pool = new MyThreadPool(count);
+        var threadIds = new ConcurrentDictionary<int, byte>();
+        var tasks = new List<IMyTask<int>>();
+
+        for (var i = 0; i < count * 5; i++)
+        {
+            tasks.Add(
+                pool.Submit(
+                    () =>
+            {
+                threadIds.TryAdd(Thread.CurrentThread.ManagedThreadId, 0);
+                Thread.Sleep(50);
+                return 0;
+            }));
+        }
+
+        foreach (var t in tasks)
+        {
+            _ = t.Result;
+        }
+
+        Assert.That(threadIds.Count, Is.EqualTo(count), "Pool should use exactly 'count' unique threads");
     }
 }

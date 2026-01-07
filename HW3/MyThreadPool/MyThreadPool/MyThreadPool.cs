@@ -9,13 +9,11 @@ namespace MyThreadPool;
 /// </summary>
 public class MyThreadPool : IDisposable
 {
-    private Thread[] threads;
-
-    private TaskQueue queue = new();
-
-    private bool isShutdownInitiated = false;
-
-    private CancellationTokenSource cancellationTokenSource = new();
+    private readonly Thread[] threads;
+    private readonly TaskQueue queue = new();
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private readonly Lock shutdownLock = new();
+    private volatile bool isShutdownInitiated;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MyThreadPool"/> class.
@@ -24,41 +22,32 @@ public class MyThreadPool : IDisposable
     /// <exception cref="ArgumentOutOfRangeException">Throws if countOfThreads less or equals 0.</exception>
     public MyThreadPool(int countOfThreads)
     {
-        if (countOfThreads <= 0)
-        {
-            throw new ArgumentOutOfRangeException("Thread count must be greater than 0");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(countOfThreads);
 
-        this.CountOfThreads = countOfThreads;
         this.threads = new Thread[countOfThreads];
 
-        for (var i = 0; i < this.CountOfThreads; i++)
+        for (var i = 0; i < countOfThreads; i++)
         {
             this.threads[i] = new Thread(this.Worker);
-        }
-
-        foreach (var thread in this.threads)
-        {
-            thread.Start();
+            this.threads[i].Start();
         }
     }
-
-    /// <summary>
-    /// Gets count of threads in the tread pool.
-    /// </summary>
-    public int CountOfThreads { get; }
 
     /// <summary>
     /// Method that stops thread pool.
     /// </summary>
     public void Shutdown()
     {
-        if (this.isShutdownInitiated)
+        lock (this.shutdownLock)
         {
-            return;
+            if (this.isShutdownInitiated)
+            {
+                return;
+            }
+
+            this.isShutdownInitiated = true;
         }
 
-        this.isShutdownInitiated = true;
         this.cancellationTokenSource.Cancel();
         this.queue.Shutdown();
 
@@ -77,15 +66,8 @@ public class MyThreadPool : IDisposable
     /// <returns>MyTask object for entering function.</returns>>
     public IMyTask<TResult> Submit<TResult>(Func<TResult> function)
     {
-        if (this.isShutdownInitiated)
-        {
-            throw new InvalidOperationException("Cannot submit on a shutdown state.");
-        }
-
-        var task = new MyTask<TResult>(function);
-
-        this.queue.Enqueue(() => task.Execute());
-
+        var task = new MyTask<TResult>(function, this);
+        this.EnqueueAction(() => task.Execute());
         return task;
     }
 
@@ -100,17 +82,19 @@ public class MyThreadPool : IDisposable
         }
 
         this.cancellationTokenSource.Dispose();
+        GC.SuppressFinalize(this);
     }
+
+    /// <summary>
+    /// Internal method to enqueue raw actions (used by continuations).
+    /// </summary>
+    /// <param name="action">Action to execute.</param>
+    internal void EnqueueAction(Action action) => this.queue.Enqueue(action);
 
     private void Worker()
     {
-        while (!this.isShutdownInitiated)
+        while (true)
         {
-            if (this.cancellationTokenSource.IsCancellationRequested)
-            {
-                break;
-            }
-
             var action = this.queue.Dequeue();
             if (action is null)
             {

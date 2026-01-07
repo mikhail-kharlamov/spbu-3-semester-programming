@@ -10,19 +10,27 @@ namespace MyThreadPool;
 public class TaskQueue
 {
     private readonly Queue<Action> queue = new();
-
     private bool isShuttingDown = false;
 
     /// <summary>
     /// Gets length of queue.
     /// </summary>
-    public int Count => this.queue.Count;
+    public int Count
+    {
+        get
+        {
+            lock (this.queue)
+            {
+                return this.queue.Count;
+            }
+        }
+    }
 
     /// <summary>
     /// Adds new element to queue.
     /// </summary>
-    /// <param name="action">.</param>
-    /// <exception cref="InvalidOperationException">..</exception>
+    /// <param name="action">Action to add.</param>
+    /// <exception cref="InvalidOperationException">If queue is shutting down.</exception>
     public void Enqueue(Action action)
     {
         lock (this.queue)
@@ -40,7 +48,7 @@ public class TaskQueue
     /// <summary>
     /// Gets and removes the last element from queue.
     /// </summary>
-    /// <returns>The last element from queue.</returns>
+    /// <returns>The last element from queue or null if shut down.</returns>
     public Action? Dequeue()
     {
         lock (this.queue)
@@ -55,8 +63,7 @@ public class TaskQueue
                 Monitor.Wait(this.queue);
             }
 
-            var result = this.queue.Dequeue();
-            return result;
+            return this.queue.Dequeue();
         }
     }
 

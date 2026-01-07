@@ -8,34 +8,29 @@ namespace MyThreadPool;
 /// Class with my realization of Task.
 /// </summary>
 /// <typeparam name="TResult">Type that task returns after computation.</typeparam>
-public class MyTask<TResult> : IMyTask<TResult>
+internal class MyTask<TResult> : IMyTask<TResult>
 {
     private readonly Func<TResult> function;
-
-    private readonly Lock locker = new();
+    private readonly MyThreadPool threadPool;
+    private readonly ManualResetEvent completedEvent = new(false);
+    private readonly List<Action> continuations = new();
 
     private TResult? result;
-
     private Exception? exception;
-
-    private bool isCompleted;
-
-    private ManualResetEvent completedEvent = new ManualResetEvent(false);
-
-    private List<Action> continuations = new();
+    private volatile bool isCompleted;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MyTask{TResult}"/> class.
     /// </summary>
-    /// <param name="function">function for computation.</param>
-    public MyTask(Func<TResult> function)
+    /// <param name="function">Function for computation.</param>
+    /// <param name="threadPool">Reference to the thread pool.</param>
+    public MyTask(Func<TResult> function, MyThreadPool threadPool)
     {
         this.function = function;
+        this.threadPool = threadPool;
     }
 
-    /// <summary>
-    /// Gets result of computation of a task function.
-    /// </summary>
+    /// <inheritdoc/>
     public TResult Result
     {
         get
@@ -46,23 +41,12 @@ public class MyTask<TResult> : IMyTask<TResult>
                 throw new AggregateException(this.exception);
             }
 
-            return this.result ?? throw new InvalidOperationException("The task has not completed yet.");
+            return this.result!;
         }
     }
 
-    /// <summary>
-    /// Gets a value indicating whether true if task is completed, else false.
-    /// </summary>
-    public bool IsCompleted
-    {
-        get
-        {
-            lock (this.locker)
-            {
-                return this.isCompleted;
-            }
-        }
-    }
+    /// <inheritdoc/>
+    public bool IsCompleted => this.isCompleted;
 
     /// <summary>
     /// Method for executing task.
@@ -78,15 +62,11 @@ public class MyTask<TResult> : IMyTask<TResult>
             this.exception = e;
         }
 
-        lock (this.locker)
-        {
-            this.isCompleted = true;
-        }
-
+        this.isCompleted = true;
         this.completedEvent.Set();
 
         List<Action> toRun;
-        lock (this.locker)
+        lock (this.continuations)
         {
             toRun = new List<Action>(this.continuations);
             this.continuations.Clear();
@@ -96,43 +76,32 @@ public class MyTask<TResult> : IMyTask<TResult>
         {
             try
             {
-                action();
+                this.threadPool.EnqueueAction(action);
             }
-            catch (Exception e)
+            catch (InvalidOperationException)
             {
-                Console.WriteLine($"Error executing task: {e}");
             }
         }
     }
 
-    /// <summary>
-    /// Methods for adding continuation functions.
-    /// </summary>
-    /// <param name="continuationFunction">continuation function.</param>
-    /// <typeparam name="TNewResult">type that cont. function returns.</typeparam>
-    /// <returns>New IMyTask with cont. function.</returns>
+    /// <inheritdoc/>
     public IMyTask<TNewResult> ContinueWith<TNewResult>(Func<TResult, TNewResult> continuationFunction)
     {
-        if (continuationFunction == null)
-        {
-            throw new ArgumentNullException(nameof(continuationFunction));
-        }
+        ArgumentNullException.ThrowIfNull(continuationFunction);
 
-        var newTask = new MyTask<TNewResult>(() => continuationFunction(this.Result));
+        var newTask = new MyTask<TNewResult>(() => continuationFunction(this.Result), this.threadPool);
+        var continuationAction = () => newTask.Execute();
 
-        var runNow = false;
-        lock (this.locker)
+        lock (this.continuations)
         {
-            runNow = this.isCompleted;
-            if (!runNow)
+            if (this.isCompleted)
             {
-                this.continuations.Add(() => newTask.Execute());
+                this.threadPool.EnqueueAction(continuationAction);
             }
-        }
-
-        if (runNow)
-        {
-            newTask.Execute();
+            else
+            {
+                this.continuations.Add(continuationAction);
+            }
         }
 
         return newTask;
