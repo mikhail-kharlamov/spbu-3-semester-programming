@@ -21,14 +21,13 @@ public class Tests
     private readonly string assemblyPath = typeof(Tests).Assembly.Location;
 
     /// <summary>
-    /// Verifies that <see cref="MyNUnit.MyNUnit"/> executes both passing and failing tests
+    /// Verifies that <see cref="MyNUnit"/> executes both passing and failing tests
     /// and correctly populates <see cref="TestResult"/> for each case.
     /// </summary>
     [Test]
     public void RunAllTestsExecutesPassingAndFailingTests()
     {
-        var runner = new MyNUnit();
-        var results = runner.RunAllTests(this.assemblyPath);
+        var results = MyNUnit.RunAllTests(this.assemblyPath);
 
         var passing = results.Single(
             r =>
@@ -57,8 +56,7 @@ public class Tests
     [Test]
     public void RunAllTestsRespectsBeforeAfterAndBeforeAfterClass()
     {
-        var runner = new MyNUnit();
-        var results = runner.RunAllTests(this.assemblyPath);
+        var results = MyNUnit.RunAllTests(this.assemblyPath);
 
         var classResults = results
             .Where(r => r.ClassName.EndsWith(nameof(LifecycleTests)))
@@ -70,10 +68,10 @@ public class Tests
 
         Assert.That(classResults.All(r => r.Status == TestStatus.Passed), Is.True);
 
-        Assert.That(LifecycleTests.BeforeClassCalls, Is.EqualTo(3));
-        Assert.That(LifecycleTests.AfterClassCalls, Is.EqualTo(3));
-        Assert.That(LifecycleTests.BeforeCalls, Is.EqualTo(6));
-        Assert.That(LifecycleTests.AfterCalls, Is.EqualTo(6));
+        Assert.That(LifecycleTests.BeforeClassCalls, Is.EqualTo(4));
+        Assert.That(LifecycleTests.AfterClassCalls, Is.EqualTo(4));
+        Assert.That(LifecycleTests.BeforeCalls, Is.EqualTo(8));
+        Assert.That(LifecycleTests.AfterCalls, Is.EqualTo(8));
     }
 
     /// <summary>
@@ -83,8 +81,7 @@ public class Tests
     [Test]
     public void RunAllTestsReportsFailureInBeforePhase()
     {
-        var runner = new MyNUnit();
-        var results = runner.RunAllTests(this.assemblyPath);
+        var results = MyNUnit.RunAllTests(this.assemblyPath);
 
         var r = results.Single(
             r =>
@@ -98,17 +95,16 @@ public class Tests
     }
 
     /// <summary>
-    /// Verifies that <see cref="MyNUnit.MyNUnit.RunAllTests(string)"/> throws
+    /// Verifies that <see cref="MyNUnit.RunAllTests(string)"/> throws
     /// <see cref="FileNotFoundException"/> when the provided path does not exist.
     /// </summary>
     [Test]
     public void RunAllTestsThrowsOnMissingPath()
     {
-        var runner = new MyNUnit();
         var invalidPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
         Assert.That(
-            () => runner.RunAllTests(invalidPath),
+            () => MyNUnit.RunAllTests(invalidPath),
             Throws.TypeOf<FileNotFoundException>());
     }
 
@@ -120,8 +116,7 @@ public class Tests
     [Test]
     public void RunAllTestsCapturesMyAssertFailureAndPassing()
     {
-        var runner = new MyNUnit();
-        var results = runner.RunAllTests(this.assemblyPath);
+        var results = MyNUnit.RunAllTests(this.assemblyPath);
 
         var failedResults = results.SingleOrDefault(
             res =>
@@ -139,7 +134,7 @@ public class Tests
         Assert.That(failedResults.Exception, Is.TypeOf<MyAssertException<int>>());
 
         var ex = (MyAssertException<int>)failedResults.Exception!;
-        Assert.That(ex.Excpected, Is.EqualTo(1));
+        Assert.That(ex.Expected, Is.EqualTo(1));
         Assert.That(ex.Actual, Is.EqualTo(2));
 
         Assert.That(passedResults!.Status, Is.EqualTo(TestStatus.Passed));

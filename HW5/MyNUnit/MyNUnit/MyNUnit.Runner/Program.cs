@@ -17,8 +17,7 @@ if (!Directory.Exists(rootPath))
     return 1;
 }
 
-var engine = new MyNUnit.MyNUnit();
-var results = engine.RunAllTests(rootPath);
+var results = MyNUnit.MyNUnit.RunAllTests(rootPath);
 
 PrintResults(results);
 
