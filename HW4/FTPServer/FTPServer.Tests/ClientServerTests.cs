@@ -76,6 +76,55 @@ public class ClientServerTests
         Assert.That(response.Objects[1].Type, Is.EqualTo(SystemObjectType.Directory));
     }
 
+    /// <summary>
+    /// Verifies that listing an empty directory returns zero entries.
+    /// </summary>
+    /// <returns>A task from void.</returns>
+    [Test]
+    public async Task ListEmptyDirectoryTest()
+    {
+        var emptyDir = Path.Combine(this.rootDir, "empty");
+        var response = await this.client.List(emptyDir);
+        Assert.That(response.Size, Is.EqualTo(-1));
+        Assert.That(response.Objects.Length, Is.EqualTo(0));
+    }
+
+    /// <summary>
+    /// Verifies that listing a non-existent directory returns -1 size.
+    /// </summary>
+    /// <returns>A task from void.</returns>
+    [Test]
+    public async Task ListNonExistentDirectoryTest()
+    {
+        var nonExistent = Path.Combine(this.rootDir, "nonexistent");
+        var response = await this.client.List(nonExistent);
+        Assert.That(response.Size, Is.EqualTo(-1));
+    }
+
+    /// <summary>
+    /// Verifies that listing a file path (not a directory) returns -1 size.
+    /// </summary>
+    /// <returns>A task from void.</returns>
+    [Test]
+    public async Task ListFilePathReturnsErrorTest()
+    {
+        var response = await this.client.List(this.filePath);
+        Assert.That(response.Size, Is.EqualTo(-1));
+    }
+
+    /// <summary>
+    /// Verifies that downloading a valid file returns correct size and content.
+    /// </summary>
+    /// <returns>A task from void.</returns>
+    [Test]
+    public async Task GetValidFileTest()
+    {
+        var response = await this.client.Get(this.filePath);
+        Assert.That(response.Size, Is.EqualTo(this.fileBytes.Length));
+        Assert.That(response.Data, Is.EqualTo(this.fileBytes));
+    }
+
+
     private string CreateTempDir()
     {
         var dir = Path.Combine(Path.GetTempPath(), "ftpserver-tests-" + Guid.NewGuid().ToString("N"));
