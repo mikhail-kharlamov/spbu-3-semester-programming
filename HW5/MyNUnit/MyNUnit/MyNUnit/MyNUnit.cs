@@ -1,4 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿// <copyright file="MyNUnit.cs" company="Mikhail Kharlamov">
+// Copyright (c) Mikhail Kharlamov. All rights reserved.
+// </copyright>
+
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using MyNUnit.Attributes;
@@ -9,10 +13,6 @@ namespace MyNUnit;
 /// <summary>
 /// Entry point for running tests in assemblies using the custom MyNUnit framework.
 /// </summary>
-/// <remarks>
-/// This class discovers all test assemblies under the specified path and executes
-/// all tests found in them in parallel, returning a flat list of test results.
-/// </remarks>
 public static class MyNUnit
 {
     /// <summary>
@@ -24,20 +24,16 @@ public static class MyNUnit
     /// <returns>
     /// An array of <see cref="TestResult"/> objects describing the outcome of each executed test.
     /// </returns>
-    /// <remarks>
-    /// Assemblies are processed in parallel, while tests inside a single assembly or test class
-    /// may be executed according to the test engine's internal scheduling strategy.
-    /// </remarks>
     public static TestResult[] RunAllTests(string path)
     {
-        var assemblies = MyNUnit.GetAssemblies(path);
+        var testClasses = MyNUnit.GetTestClasses(path);
         var results = new ConcurrentBag<TestResult>();
         Parallel.ForEach(
-            assemblies,
+            testClasses,
             new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            assembly =>
+            testClass =>
             {
-                var fileResults = MyNUnit.HandleClass(assembly);
+                var fileResults = MyNUnit.HandleClass(testClass);
                 foreach (var result in fileResults)
                 {
                     results.Add(result);
@@ -48,64 +44,74 @@ public static class MyNUnit
 
     private static ConcurrentBag<TestResult> HandleClass(Type type)
     {
-        var methods = MyNUnit.GetAttributeMarkedMethods(type);
         var results = new ConcurrentBag<TestResult>();
+        ClassMethodsByAttributes methods;
+
+        try
+        {
+            methods = MyNUnit.GetAttributeMarkedMethods(type);
+        }
+        catch (Exception e)
+        {
+             results.Add(
+                 new TestResult(
+                 AssemblyName: type.Assembly.GetName().Name ?? string.Empty,
+                 ClassName: type.FullName ?? type.Name,
+                 MethodName: "ClassStructureDefinition",
+                 Status: TestStatus.Errored,
+                 Duration: TimeSpan.Zero,
+                 Phase: TestPhase.BeforeClass,
+                 Message: "Invalid test class structure",
+                 Exception: e));
+             return results;
+        }
 
         var assemblyName = type.Assembly.GetName().Name ?? type.Assembly.FullName ?? string.Empty;
         var className = type.FullName ?? type.Name;
 
-        MyNUnit.RunBeforeClass(methods, assemblyName, className, results);
+        if (!MyNUnit.RunBeforeClass(methods, assemblyName, className, results))
+        {
+            return results;
+        }
+
         MyNUnit.RunTests(methods, type, assemblyName, className, results);
         MyNUnit.RunAfterClass(methods, assemblyName, className, results);
 
         return results;
     }
 
-    private static void RunBeforeClass(
+    private static bool RunBeforeClass(
         ClassMethodsByAttributes methods,
         string assemblyName,
         string className,
         ConcurrentBag<TestResult> results)
     {
-        Parallel.ForEach(
-            methods.BeforeClassMethods,
-            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            method =>
+        var success = true;
+        foreach (var method in methods.BeforeClassMethods)
+        {
+            try
             {
-                var sw = Stopwatch.StartNew();
+                method.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                success = false;
+                var exception = e is TargetInvocationException tie ? tie.InnerException ?? tie : e;
 
-                var status = TestStatus.Passed;
-                Exception? exception = null;
-
-                try
-                {
-                    method.Invoke(null, null);
-                }
-                catch (TargetInvocationException e)
-                {
-                    status = TestStatus.Failed;
-                    exception = e.InnerException ?? e;
-                }
-                catch (Exception e)
-                {
-                    status = TestStatus.Failed;
-                    exception = e;
-                }
-                finally
-                {
-                    sw.Stop();
-                }
-
-                results.Add(new TestResult(
+                results.Add(
+                    new TestResult(
                     AssemblyName: assemblyName,
                     ClassName: className,
                     MethodName: method.Name,
-                    Status: status,
-                    Duration: sw.Elapsed,
+                    Status: TestStatus.Errored,
+                    Duration: TimeSpan.Zero,
                     Phase: TestPhase.BeforeClass,
-                    Message: status == TestStatus.Failed ? "Exception in BeforeClass" : null,
+                    Message: "Exception in BeforeClass",
                     Exception: exception));
-            });
+            }
+        }
+
+        return success;
     }
 
     private static void RunTests(
@@ -128,85 +134,95 @@ public static class MyNUnit
                 string? message = null;
 
                 object? instance = null;
+                var myTestAttr = method.GetCustomAttribute<MyTest>();
+                var expectedException = myTestAttr?.Expected;
+                var ignoreReason = myTestAttr?.Ignore;
+
+                if (ignoreReason != null)
+                {
+                    sw.Stop();
+                    results.Add(
+                        new TestResult(
+                        AssemblyName: assemblyName,
+                        ClassName: className,
+                        MethodName: method.Name,
+                        Status: TestStatus.Ignored,
+                        Duration: sw.Elapsed,
+                        Phase: TestPhase.Test,
+                        Message: ignoreReason));
+                    return;
+                }
 
                 try
                 {
                     instance ??= Activator.CreateInstance(type);
 
-                    // Before
                     foreach (var before in methods.BeforeMethods)
                     {
                         try
                         {
                             before.Invoke(instance, null);
                         }
-                        catch (TargetInvocationException e)
-                        {
-                            status = TestStatus.Failed;
-                            phase = TestPhase.Before;
-                            exception = e.InnerException ?? e;
-                            message = $"Exception in Before method {before.Name}";
-                            return;
-                        }
                         catch (Exception e)
                         {
-                            status = TestStatus.Failed;
+                            status = TestStatus.Errored;
                             phase = TestPhase.Before;
-                            exception = e;
+                            exception = e is TargetInvocationException tie ? tie.InnerException ?? tie : e;
                             message = $"Exception in Before method {before.Name}";
                             return;
                         }
                     }
 
-                    // Test
                     try
                     {
                         var result = method.Invoke(instance, null);
-
                         if (result is Task t)
                         {
                             t.GetAwaiter().GetResult();
                         }
-                    }
-                    catch (TargetInvocationException e)
-                    {
-                        status = TestStatus.Failed;
-                        phase = TestPhase.Test;
-                        exception = e.InnerException ?? e;
-                        message = "Exception in test method";
-                        return;
+
+                        if (expectedException != null)
+                        {
+                            status = TestStatus.Failed;
+                            message = $"Expected exception {expectedException.Name} but none was thrown.";
+                        }
                     }
                     catch (Exception e)
                     {
-                        status = TestStatus.Failed;
-                        phase = TestPhase.Test;
-                        exception = e;
-                        message = "Exception in test method";
-                        return;
+                        var actualEx = e is TargetInvocationException tie ? tie.InnerException ?? tie : e;
+
+                        if (expectedException != null && expectedException.IsInstanceOfType(actualEx))
+                        {
+                            status = TestStatus.Passed;
+                        }
+                        else
+                        {
+                            status = TestStatus.Failed;
+                            phase = TestPhase.Test;
+                            exception = actualEx;
+                            message = expectedException != null
+                                ? $"Expected exception {expectedException.Name} but {actualEx.GetType().Name} was thrown."
+                                : "Exception in test method";
+                        }
                     }
 
-                    // After
                     foreach (var after in methods.AfterMethods)
                     {
                         try
                         {
                             after.Invoke(instance, null);
                         }
-                        catch (TargetInvocationException e)
-                        {
-                            status = TestStatus.Failed;
-                            phase = TestPhase.After;
-                            exception = e.InnerException ?? e;
-                            message = $"Exception in After method {after.Name}";
-                            return;
-                        }
                         catch (Exception e)
                         {
-                            status = TestStatus.Failed;
-                            phase = TestPhase.After;
-                            exception = e;
-                            message = $"Exception in After method {after.Name}";
-                            return;
+                            var afterEx = e is TargetInvocationException tie ? tie.InnerException ?? tie : e;
+
+                            if (status == TestStatus.Passed)
+                            {
+                                status = TestStatus.Errored;
+                                phase = TestPhase.After;
+                                exception = afterEx;
+                                message = $"Exception in After method {after.Name}";
+                            }
                         }
                     }
                 }
@@ -234,48 +250,29 @@ public static class MyNUnit
         string className,
         ConcurrentBag<TestResult> results)
     {
-        Parallel.ForEach(
-            methods.AfterClassMethods,
-            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            method =>
+        foreach (var method in methods.AfterClassMethods)
+        {
+            try
             {
-                var sw = Stopwatch.StartNew();
-
-                var status = TestStatus.Passed;
-                Exception? exception = null;
-
-                try
-                {
-                    method.Invoke(null, null);
-                }
-                catch (TargetInvocationException e)
-                {
-                    status = TestStatus.Failed;
-                    exception = e.InnerException ?? e;
-                }
-                catch (Exception e)
-                {
-                    status = TestStatus.Failed;
-                    exception = e;
-                }
-                finally
-                {
-                    sw.Stop();
-                }
+                method.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                var exception = e is TargetInvocationException tie ? tie.InnerException ?? tie : e;
 
                 results.Add(
                     new TestResult(
                     AssemblyName: assemblyName,
                     ClassName: className,
                     MethodName: method.Name,
-                    Status: status,
-                    Duration: sw.Elapsed,
+                    Status: TestStatus.Errored,
+                    Duration: TimeSpan.Zero,
                     Phase: TestPhase.AfterClass,
-                    Message: status == TestStatus.Failed ? "Exception in AfterClass" : null,
+                    Message: "Exception in AfterClass",
                     Exception: exception));
-            });
+            }
+        }
     }
-
 
     private static ClassMethodsByAttributes GetAttributeMarkedMethods(Type type)
     {
@@ -284,31 +281,35 @@ public static class MyNUnit
         List<MethodInfo> tests = new();
         List<MethodInfo> before = new();
         List<MethodInfo> after = new();
+
         foreach (var method in type.GetMethods())
         {
             foreach (var attribute in method.GetCustomAttributes())
             {
-                switch (attribute)
+                if (attribute is BeforeClass)
                 {
-                    case BeforeClass:
-                        beforeClass.Add(method);
-                        break;
-
-                    case AfterClass:
-                        afterClass.Add(method);
-                        break;
-
-                    case Before:
-                        before.Add(method);
-                        break;
-
-                    case After:
-                        after.Add(method);
-                        break;
-
-                    case MyTest:
-                        tests.Add(method);
-                        break;
+                    ValidateStaticVoidNoArgs(method, nameof(BeforeClass));
+                    beforeClass.Add(method);
+                }
+                else if (attribute is AfterClass)
+                {
+                    ValidateStaticVoidNoArgs(method, nameof(AfterClass));
+                    afterClass.Add(method);
+                }
+                else if (attribute is Before)
+                {
+                    ValidateInstanceVoidNoArgs(method, nameof(Before));
+                    before.Add(method);
+                }
+                else if (attribute is After)
+                {
+                    ValidateInstanceVoidNoArgs(method, nameof(After));
+                    after.Add(method);
+                }
+                else if (attribute is MyTest)
+                {
+                    ValidateInstanceVoidNoArgs(method, nameof(MyTest));
+                    tests.Add(method);
                 }
             }
         }
@@ -321,29 +322,48 @@ public static class MyNUnit
             after.ToArray());
     }
 
-    private static Type[] GetAssemblies(string mainPath)
+    private static void ValidateStaticVoidNoArgs(MethodInfo method, string attributeName)
     {
-        var assemblies = new List<Type>();
+        if (!method.IsStatic || method.ReturnType != typeof(void) || method.GetParameters().Length > 0)
+        {
+            throw new InvalidOperationException($"Method {method.Name} marked with {attributeName} must be static, void, and have no parameters.");
+        }
+    }
+
+    private static void ValidateInstanceVoidNoArgs(MethodInfo method, string attributeName)
+    {
+        if (method.IsStatic || method.ReturnType != typeof(void) || method.GetParameters().Length > 0)
+        {
+            throw new InvalidOperationException($"Method {method.Name} marked with {attributeName} must be instance (non-static), void, and have no parameters.");
+        }
+    }
+
+    private static Type[] GetTestClasses(string mainPath)
+    {
+        var types = new List<Type>();
         if (Directory.Exists(mainPath))
         {
             var paths = Directory.GetFiles(mainPath, "*.dll", SearchOption.AllDirectories).ToList();
-            paths.AddRange(Directory.GetDirectories(mainPath));
-            foreach (var path in paths)
+            foreach (var dllPath in paths)
             {
-                assemblies.AddRange(MyNUnit.GetAssemblies(path));
+                try
+                {
+                    types.AddRange(Assembly.LoadFrom(dllPath).ExportedTypes.Where(t => t.IsClass));
+                }
+                catch (BadImageFormatException)
+                {
+                }
             }
         }
-
-        if (File.Exists(mainPath))
+        else if (File.Exists(mainPath))
         {
-            assemblies.AddRange(Assembly.LoadFrom(mainPath).ExportedTypes.Where(t => t.IsClass));
+            types.AddRange(Assembly.LoadFrom(mainPath).ExportedTypes.Where(t => t.IsClass));
+        }
+        else
+        {
+            throw new FileNotFoundException("File or directory not found", mainPath);
         }
 
-        if (assemblies.Count == 0)
-        {
-            throw new FileNotFoundException("File not found", mainPath);
-        }
-
-        return assemblies.ToArray();
+        return types.ToArray();
     }
 }

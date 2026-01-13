@@ -1,7 +1,3 @@
-// <copyright file="TestStatus.cs" company="Mikhail Kharlamov">
-// Copyright (c) Mikhail Kharlamov. All rights reserved.
-// </copyright>
-
 namespace MyNUnit.Models;
 
 /// <summary>
@@ -15,7 +11,7 @@ public enum TestStatus
     Passed,
 
     /// <summary>
-    /// The test failed.
+    /// The test itself did not pass (assertion failed or unexpected exception in test body).
     /// </summary>
     Failed,
 
@@ -23,4 +19,10 @@ public enum TestStatus
     /// The test was skipped and not executed.
     /// </summary>
     Ignored,
+
+    /// <summary>
+    /// The test could not be executed because infrastructure failed
+    /// (Before/After/BeforeClass/AfterClass) or the test method definition is invalid.
+    /// </summary>
+    Errored,
 }

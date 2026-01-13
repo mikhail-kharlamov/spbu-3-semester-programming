@@ -29,14 +29,14 @@ public class MyTest : Attribute
     /// </param>
     public MyTest(Type? expected = null, string? ignore = null)
     {
-        this.Excpected = expected;
+        this.Expected = expected;
         this.Ignore = ignore;
     }
 
     /// <summary>
     /// Gets the type of the exception that the test is expected to throw, if any.
     /// </summary>
-    public Type? Excpected { get; }
+    public Type? Expected { get; }
 
     /// <summary>
     /// Gets the reason why the test should be ignored, if any.

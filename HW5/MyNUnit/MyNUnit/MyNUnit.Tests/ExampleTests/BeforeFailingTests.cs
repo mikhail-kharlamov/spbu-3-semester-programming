@@ -7,7 +7,7 @@ namespace MyNUnit.Tests.ExampleTests;
 
 /// <summary>
 /// Sample test class used to verify that failures in <c>Before</c> methods
-/// are reported by the MyNUnit framework as failures in the <see cref="TestPhase.Before"/> phase.
+/// are reported by the MyNUnit framework as failures in the <see cref="Before"/> phase.
 /// </summary>
 public class BeforeFailingTests
 {
@@ -16,10 +16,7 @@ public class BeforeFailingTests
     /// a failure during the <c>Before</c> phase.
     /// </summary>
     [Before]
-    public void Before()
-    {
-        throw new InvalidOperationException("Fail in Before");
-    }
+    public void Before() => throw new InvalidOperationException("Fail in Before");
 
     /// <summary>
     /// Test method that should never be executed because the <c>Before</c> method fails.
